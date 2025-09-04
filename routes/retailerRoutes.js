@@ -18,7 +18,7 @@ const router = express.Router()
 router.route('/ordermade').put(protect/*,admin*/,updateProductStockCount)
 router.route('/').get(getRetailers).post(/*protect,*/addNewRetailer)
 router.route('/welcomeemail').post(sendWelcomeEmail)
-router.route('/generatecreditscore').post(generateCreditScore)
+router.route('/generatecreditscore').get(generateCreditScore)
 router.route('/:id/reviews').post(protect,createProductReview)
 router.get('/top',getTopProducts)
 
