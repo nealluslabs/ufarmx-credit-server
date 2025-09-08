@@ -134,8 +134,8 @@ app.get('/api/generatecreditscore',(req,res)=>{
  
   const riskScore = parseFloat((Math.random() * (9.8 - 3) + 3).toFixed(1));
   if(riskScore){
-    res.send('API is running on CREDIT SCORE ROUTE...')
-   //res.json({creditScore:riskScore})
+    //res.send('API is running on CREDIT SCORE ROUTE...')
+   res.json({creditScore:riskScore})
   
   }
    else{ res.status(404) 
