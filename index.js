@@ -77,6 +77,8 @@ import {presentAdminMessage} from './controllers/userControllers.js'
 import {protect,admin} from './Middleware/authMiddleware.js'
 //const {protect,admin} = require('../Middleware/authMiddleware.js')
 
+import asyncHandler from 'express-async-handler'
+
 import cors from 'cors'
 //const cors =  require('cors')
 
