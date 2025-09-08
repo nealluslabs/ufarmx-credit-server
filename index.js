@@ -101,10 +101,12 @@ app.use(cors({
 
 app.use(cors());
 
-
-app.use('/api/products',productRoutes)
-app.use('/api/retailer-products',retailerProductRoutes)
 app.use('/api/retailers',retailerRoutes)
+
+/*app.use('/api/products',productRoutes)
+app.use('/api/retailer-products',retailerProductRoutes)
+
+
 app.use('/api/retailer-farmers',retailerFarmerRoutes)
 app.use('/api/users',userRoutes) 
 app.use('/api/admins',adminRoutes) 
@@ -119,7 +121,22 @@ app.use('/api/agents',agentRoutes)
 
 
 
-app.use('/api/upload',uploadRoutes)
+app.use('/api/upload',uploadRoutes)*/
+
+//@desc  Generate risk or credit score
+//@route GET /api/generatecreditscore
+//@access Public
+app.get('/api/generatecreditscore',(req,res)=>{
+const generateCreditScore= asyncHandler(async (req,res)=>{
+  res.header("Access-Control-Allow-Origin","*")
+ 
+  const riskScore = parseFloat((Math.random() * (9.8 - 3) + 3).toFixed(1));
+  if(riskScore){res.json({creditScore:riskScore})}
+   else{ res.status(404) 
+   throw new Error('Risk Socre not found')}
+})
+
+})
 
 app.get('/api/config/paypal',(req,res)=>{
   res.send(process.env.PAYPAL_CLIENT_ID)
