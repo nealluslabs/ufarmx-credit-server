@@ -105,7 +105,7 @@ app.use(cors());
 
 app.use('/api/retailers',retailerRoutes)
 
-/*app.use('/api/products',productRoutes)
+app.use('/api/products',productRoutes)
 app.use('/api/retailer-products',retailerProductRoutes)
 
 
@@ -123,13 +123,13 @@ app.use('/api/agents',agentRoutes)
 
 
 
-app.use('/api/upload',uploadRoutes)*/
+app.use('/api/upload',uploadRoutes)
 
 //@desc  Generate risk or credit score
 //@route GET /api/generatecreditscore
 //@access Public
 app.get('/api/generatecreditscore',(req,res)=>{
-const generateCreditScore= asyncHandler(async (req,res)=>{
+
   res.header("Access-Control-Allow-Origin","*")
  
   const riskScore = parseFloat((Math.random() * (9.8 - 3) + 3).toFixed(1));
@@ -140,7 +140,7 @@ const generateCreditScore= asyncHandler(async (req,res)=>{
   }
    else{ res.status(404) 
    throw new Error('Risk Score not found')}
-})
+
 
 })
 
