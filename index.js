@@ -131,9 +131,13 @@ const generateCreditScore= asyncHandler(async (req,res)=>{
   res.header("Access-Control-Allow-Origin","*")
  
   const riskScore = parseFloat((Math.random() * (9.8 - 3) + 3).toFixed(1));
-  if(riskScore){res.json({creditScore:riskScore})}
+  if(riskScore){
+    res.send('API is running on CREDIT SCORE ROUTE...')
+    res.json({creditScore:riskScore})
+  
+  }
    else{ res.status(404) 
-   throw new Error('Risk Socre not found')}
+   throw new Error('Risk Score not found')}
 })
 
 })
