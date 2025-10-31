@@ -143,6 +143,94 @@ app.get('/api/generatecreditscore',(req,res)=>{
 
 
 })
+const calculateScore = (data) =>{
+  let score = 0;
+
+  // 1. Demographics & Identity
+  score += data.hasID ? 5 : 2;
+  score += (data.age >= 30 && data.age <= 50) ? 2 : 1;
+  score += data.hasEducationOrTraining ? 3 : 1;
+
+  // 2. Crop & Production Data
+  if (data.cropType === "stable") score += 5;
+  else score += 2;
+
+  score += data.multipleCrops ? 5 : 2;
+
+  if (data.yieldHistory === "5plus") score += 10;
+  else if (data.yieldHistory === "3to4") score += 7;
+  else if (data.yieldHistory === "1to2") score += 5;
+  else score += 2;
+
+  // 3. Farm & Land Characteristics
+  if (data.landOwnership === "own") score += 8;
+  else if (data.landOwnership === "longLease") score += 5;
+  else score += 3;
+
+  if (data.farmSize === "above") score += 7;
+  else if (data.farmSize === "average") score += 5;
+  else score += 3;
+
+  score += data.hasInsurance ? 5 : 3;
+  score += data.hasIrrigation ? 5 : 3;
+
+  // 4. Financial & Market Access
+  if (data.salesChannel === "contract") score += 10;
+  else if (data.salesChannel === "regularMarket") score += 7;
+  else score += 3;
+
+  score += data.offFarmIncome ? 5 : 0;
+
+  if (data.debtToIncome === "low") score += 5;
+  else if (data.debtToIncome === "medium") score += 3;
+  else score += 1;
+
+  score += data.miscellaneousScore ?? 5; 
+
+  // 5. Behavioral & Historical Data
+  if (data.repaymentHistory === "always") score += 10;
+  else if (data.repaymentHistory === "mixed") score += 6;
+  else score += 3;
+
+  if (data.crcScore === "high") score += 10;
+  else if (data.crcScore === "medium") score += 6;
+  else score += 3;
+
+  score += data.coopMember ? 5 : 0;
+
+  // Final score (scaled)
+  const finalScore = (score / 100) * 10;
+  return Number(finalScore.toFixed(2));
+}
+
+app.post("/calculate-score", async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data._id) {
+      return res.status(400).json({ success: false, message: "_id is required" });
+    }
+
+    const newScore = calculateScore(data);
+
+    const updatedFarmer = await Farmer.findByIdAndUpdate(
+      data._id,
+      { $set: { riskScore: newScore } },
+      { new: true }
+    );
+
+    return res.json({
+      success: true,
+      message: "Score calculated & saved",
+      riskScore: newScore,
+      farmer: updatedFarmer
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 app.get('/api/config/paypal',(req,res)=>{
   res.send(process.env.PAYPAL_CLIENT_ID)
