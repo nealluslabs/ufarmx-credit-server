@@ -80,6 +80,7 @@ import {protect,admin} from './Middleware/authMiddleware.js'
 import asyncHandler from 'express-async-handler'
 
 import cors from 'cors'
+import Farmers from './models/farmerModel.js'
 //const cors =  require('cors')
 
 
@@ -143,94 +144,132 @@ app.get('/api/generatecreditscore',(req,res)=>{
 
 
 })
-const calculateScore = (data) =>{
-  let score = 0;
+  const mapFarmerToScoreInput = (farmer) => {
+    return {
+      hasID: farmer.identification?.toLowerCase() === "yes",
 
-  // 1. Demographics & Identity
-  score += data.hasID ? 5 : 2;
-  score += (data.age >= 30 && data.age <= 50) ? 2 : 1;
-  score += data.hasEducationOrTraining ? 3 : 1;
+      age: Number(farmer.age),
 
-  // 2. Crop & Production Data
-  if (data.cropType === "stable") score += 5;
-  else score += 2;
+      hasEducationOrTraining: false, 
 
-  score += data.multipleCrops ? 5 : 2;
+      cropType: farmer.farmingCrop?.toLowerCase().includes("maize") ||
+                farmer.farmingCrop?.toLowerCase().includes("rice") ||
+                farmer.farmingCrop?.toLowerCase().includes("cocoa")
+                ? "stable" : "highRisk",
 
-  if (data.yieldHistory === "5plus") score += 10;
-  else if (data.yieldHistory === "3to4") score += 7;
-  else if (data.yieldHistory === "1to2") score += 5;
-  else score += 2;
+      multipleCrops: farmer.farmingCrop?.includes(","),
+      
+      yieldHistory: "1to2", 
 
-  // 3. Farm & Land Characteristics
-  if (data.landOwnership === "own") score += 8;
-  else if (data.landOwnership === "longLease") score += 5;
-  else score += 3;
+      landOwnership: "seasonalLease",
 
-  if (data.farmSize === "above") score += 7;
-  else if (data.farmSize === "average") score += 5;
-  else score += 3;
+      farmSize: farmer.farmSize > 1 ? "above" : "average",
 
-  score += data.hasInsurance ? 5 : 3;
-  score += data.hasIrrigation ? 5 : 3;
+      hasInsurance: false, 
 
-  // 4. Financial & Market Access
-  if (data.salesChannel === "contract") score += 10;
-  else if (data.salesChannel === "regularMarket") score += 7;
-  else score += 3;
+      hasIrrigation: farmer.organicFarmingInterest?.toLowerCase() === "yes",
 
-  score += data.offFarmIncome ? 5 : 0;
+      salesChannel: farmer.market?.toLowerCase().includes("trader")
+        ? "regularMarket"
+        : "local",
 
-  if (data.debtToIncome === "low") score += 5;
-  else if (data.debtToIncome === "medium") score += 3;
-  else score += 1;
+      offFarmIncome: farmer.pre_retailer ? true : false,
 
-  score += data.miscellaneousScore ?? 5; 
+      debtToIncome: "medium", 
 
-  // 5. Behavioral & Historical Data
-  if (data.repaymentHistory === "always") score += 10;
-  else if (data.repaymentHistory === "mixed") score += 6;
-  else score += 3;
+      miscellaneousScore: 5,
 
-  if (data.crcScore === "high") score += 10;
-  else if (data.crcScore === "medium") score += 6;
-  else score += 3;
+      repaymentHistory: "noRecord", 
 
-  score += data.coopMember ? 5 : 0;
+      crcScore: "medium", 
 
-  // Final score (scaled)
-  const finalScore = (score / 100) * 10;
-  return Number(finalScore.toFixed(2));
-}
+      coopMember: false
+    };
+  }
+
+  const calculateScore = (data) =>{
+    let score = 0;
+
+    // 1. Demographics & Identity
+    score += data.hasID ? 5 : 2;
+    score += (data.age >= 30 && data.age <= 50) ? 2 : 1;
+    score += data.hasEducationOrTraining ? 3 : 1;
+
+    // 2. Crop & Production Data
+    if (data.cropType === "stable") score += 5;
+    else score += 2;
+
+    score += data.multipleCrops ? 5 : 2;
+
+    if (data.yieldHistory === "5plus") score += 10;
+    else if (data.yieldHistory === "3to4") score += 7;
+    else if (data.yieldHistory === "1to2") score += 5;
+    else score += 2;
+
+    // 3. Farm & Land Characteristics
+    if (data.landOwnership === "own") score += 8;
+    else if (data.landOwnership === "longLease") score += 5;
+    else score += 7;
+
+    if (data.farmSize === "above") score += 7;
+    else if (data.farmSize === "average") score += 5;
+    else score += 3;
+
+    score += data.hasInsurance ? 5 : 3;
+    score += data.hasIrrigation ? 5 : 3;
+
+    // 4. Financial & Market Access
+    if (data.salesChannel === "contract") score += 10;
+    else if (data.salesChannel === "regularMarket") score += 7;
+    else score += 3;
+
+    score += data.offFarmIncome ? 5 : 0;
+
+    if (data.debtToIncome === "low") score += 5;
+    else if (data.debtToIncome === "medium") score += 3;
+    else score += 1;
+
+    score += data.miscellaneousScore ?? 5; 
+
+    // 5. Behavioral & Historical Data
+    if (data.repaymentHistory === "always") score += 10;
+    else if (data.repaymentHistory === "mixed") score += 6;
+    else score += 3;
+
+    if (data.crcScore === "high") score += 10;
+    else if (data.crcScore === "medium") score += 6;
+    else score += 10;
+
+    score += data.coopMember ? 5 : 5;
+
+    // Final score (scaled)
+    const finalScore = (score / 100) * 10;
+    return Number(finalScore.toFixed(2));
+  }
 
 app.post("/calculate-score", async (req, res) => {
   try {
-    const data = req.body;
+    const farmer = req.body;
 
-    if (!data._id) {
+    if (!farmer._id) {
       return res.status(400).json({ success: false, message: "_id is required" });
     }
 
-    const newScore = calculateScore(data);
+    const mappedData = mapFarmerToScoreInput(farmer);
+    const newScore = calculateScore(mappedData);
 
-    const updatedFarmer = await Farmer.findByIdAndUpdate(
-      data._id,
-      { $set: { riskScore: newScore } },
-      { new: true }
-    );
+    await Farmers.findByIdAndUpdate(farmer._id, { riskScore: newScore });
 
     return res.json({
       success: true,
-      message: "Score calculated & saved",
-      riskScore: newScore,
-      farmer: updatedFarmer
+      riskScore: newScore
     });
 
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 app.get('/api/config/paypal',(req,res)=>{
   res.send(process.env.PAYPAL_CLIENT_ID)
@@ -279,7 +318,7 @@ app.use(notFound)
 
 app.use(errorHandler)
 
-const port=process.env.PORT||5000
+const port=process.env.PORT||6000
 
 app.listen(port, ()=>{
   console.log(`Server is listening in ${process.env.NODE_ENV} mode,
