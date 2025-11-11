@@ -146,7 +146,7 @@ app.get('/api/generatecreditscore',(req,res)=>{
 })
   const mapFarmerToScoreInput = (farmer) => {
     return {
-      hasID: farmer.hasID?.toLowerCase() === "yes",
+      hasID: farmer.hasID?"yes":'no',
 
       age: Number(farmer.age),
 
