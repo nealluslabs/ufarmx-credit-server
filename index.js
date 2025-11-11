@@ -146,11 +146,11 @@ app.get('/api/generatecreditscore',(req,res)=>{
 })
   const mapFarmerToScoreInput = (farmer) => {
     return {
-      hasID: farmer.identification?.toLowerCase() === "yes",
+      hasID: farmer.hasID?.toLowerCase() === "yes",
 
       age: Number(farmer.age),
 
-      hasEducationOrTraining: false, 
+      hasEducationOrTraining:farmer.educationLevel? true:false, 
 
       cropType: farmer.farmingCrop?.toLowerCase().includes("maize") ||
                 farmer.farmingCrop?.toLowerCase().includes("rice") ||
@@ -159,31 +159,49 @@ app.get('/api/generatecreditscore',(req,res)=>{
 
       multipleCrops: farmer.farmingCrop?.includes(","),
       
-      yieldHistory: "1to2", 
+      yieldHistory:  farmer.farmingExperience &&  parseInt(farmer.farmingExperience) < 3 ?"1to2"
+      :
+      
+      farmer.farmingExperience &&  parseInt(farmer.farmingExperience) < 5 ?"3to4"
+      :
+       "5plus"
 
-      landOwnership: "seasonalLease",
+      ,
 
-      farmSize: farmer.farmSize > 1 ? "above" : "average",
+      landOwnership: farmer.landOwnership? (
+        farmer.landOwnership.toLowerCase().includes("owns")?  "own"
+        :
+       
+        farmer.landOwnership.toLowerCase().includes("long term") &&  "longLease"
+      
+      ):"seasonalLease",//check landownership , shouldnt be hardcoded
 
-      hasInsurance: false, 
+      farmSize:farmer.farmSize && farmer.farmSizeUnit && farmer.farmSizeUnit.trim()==="Hectare" && Number(farmer.farmSize) > 1 ? "above" 
+      :
+      farmer.farmSize && farmer.farmSizeUnit && farmer.farmSizeUnit.trim()==="Acre" && Number(farmer.farmSize) > 0.44 ? "above" 
+      : "average", // convert 1 hectare to acres and use 1 hectare as average..look
 
-      hasIrrigation: farmer.organicFarmingInterest?.toLowerCase() === "yes",
+      hasInsurance: farmer.insurance? true:false, //check farmer.hasInsurance - 
 
-      salesChannel: farmer.market?.toLowerCase().includes("trader")
-        ? "regularMarket"
+      hasIrrigation:  farmer.irrigation? true:false,
+
+      salesChannel: farmer.salesChannel && farmer.salesChannel.toLowerCase().includes("contract")
+        ? "contract":
+        farmer.salesChannel && farmer.salesChannel.toLowerCase().includes("open market regular")?
+        "regularMarket"
         : "local",
 
-      offFarmIncome: farmer.pre_retailer ? true : false,
+      offFarmIncome: farmer.offFarmIncome? true : false, //farmer.offFarmIncome
 
-      debtToIncome: "medium", 
+      debtToIncome: "low", //change to low 
 
       miscellaneousScore: 5,
 
-      repaymentHistory: "noRecord", 
+      repaymentHistory: "always", //change to always 
 
-      crcScore: "medium", 
+      crcScore: "medium", //change to high
 
-      coopMember: false
+      coopMember:  farmer.farmerGroups? true:false, //farmer.farmerGroups -true or false
     };
   }
 
@@ -240,7 +258,7 @@ app.get('/api/generatecreditscore',(req,res)=>{
     else if (data.crcScore === "medium") score += 6;
     else score += 10;
 
-    score += data.coopMember ? 5 : 5;
+    score += data.coopMember ? 5 : 0;
 
     // Final score (scaled)
     const finalScore = (score / 100) * 10;
@@ -251,14 +269,14 @@ app.post("/calculate-score", async (req, res) => {
   try {
     const farmer = req.body;
 
-    if (!farmer._id) {
-      return res.status(400).json({ success: false, message: "_id is required" });
-    }
+    //if (!farmer._id) {
+    //  return res.status(400).json({ success: false, message: "_id is required" });
+    //}
 
     const mappedData = mapFarmerToScoreInput(farmer);
     const newScore = calculateScore(mappedData);
 
-    await Farmers.findByIdAndUpdate(farmer._id, { riskScore: newScore });
+   // await Farmers.findByIdAndUpdate(farmer._id, { riskScore: newScore });
 
     return res.json({
       success: true,
