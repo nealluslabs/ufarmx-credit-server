@@ -83,6 +83,8 @@ import cors from 'cors'
 import Farmers from './models/farmerModel.js'
 //const cors =  require('cors')
 
+import bodyParser from 'body-parser';
+
 
 dotenv.config()
  
@@ -122,7 +124,8 @@ app.use('/api/requests',requestRoutes)
 
 app.use('/api/agents',agentRoutes)
 
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/api/upload',uploadRoutes)
 
@@ -288,7 +291,161 @@ app.post("/calculate-score", async (req, res) => {
   }
 });
 
+// dummy data starts here
+const FARMER_DATA = {
+    name: 'Jane Doe',
+    location: 'Nakuru, Kenya',
+    linkedRetailer: 'AgriSupply Inc.',
+    farmSize: '5 Acres',
+    agentContact: '+254712345678 (Agent Ben)'
+};
 
+const PAYMENT_DATA = {
+    outstandingBalance: '5,100 KES (Due Nov 30)',
+    lastPaymentDate: 'Oct 25, 2025',
+    lastPaymentAmount: '3,000 KES'
+};
+
+const RETAILER_REQUEST = {
+    retailerName: 'AgroMart Distributors',
+    inputType: 'Fertilizers',
+    price: '2,500 KES',
+};
+// dummy data ends here
+
+app.post('/ussd', (req, res) => {
+    const {
+        sessionId,
+        serviceCode,
+        phoneNumber,
+        text, 
+    } = req.body;
+
+    let response = '';
+
+    if (text === '') {
+        response = `CON Welcome to UfarmX
+        1. Request Farm Inputs
+        2. View Retailer Requests
+        3. Track My Payments
+        4. My Account
+        5. Help`;
+
+    // --- 1. REQUEST FARM INPUTS ---
+    } else if (text === '1') {
+        response = `CON Request Farm Inputs
+        1. Seeds
+        2. Fertilizers
+        3. Pesticides
+        4. Equipment
+        5. Other Inputs
+        0. Back`;
+
+    } else if (text === '1*1' || text === '1*2' || text === '1*3' || text === '1*4' || text === '1*5') {
+        const inputType = {
+            '1*1': 'Seeds',
+            '1*2': 'Fertilizers',
+            '1*3': 'Pesticides',
+            '1*4': 'Equipment',
+            '1*5': 'Other Inputs'
+        }[text];
+        
+        response = `END Your request for ${inputType} has been sent to ${FARMER_DATA.linkedRetailer}. You'll be notified once approved.`;
+
+    } else if (text === '2') {
+        response = `CON View Retailer Requests
+        1. Pending Requests
+        2. Approved Requests
+        3. Denied Requests
+        0. Back`;
+        
+    } else if (text === '2*1') {
+        response = `CON Pending Requests
+      ${RETAILER_REQUEST.retailerName} requested to sell you ${RETAILER_REQUEST.inputType}. 
+      Price: ${RETAILER_REQUEST.price}. Approve?
+      1. Yes
+      2. No
+      0. Back`;
+
+    } else if (text === '2*1*1') {
+        response = `END Success! Request approved. The retailer will be notified.`;
+
+    } else if (text === '2*1*2') {
+        response = `END Request denied. The retailer will be notified.`;
+
+    } else if (text === '3') {
+        response = `CON Track My Payments
+        1. View Outstanding Balance
+        2. View Payment History
+        3. Make a Payment (via mobile money)
+        0. Back`;
+
+    } else if (text === '3*1') {
+        response = `END Your outstanding balance is ${PAYMENT_DATA.outstandingBalance}.`;
+
+    } else if (text === '3*2') {
+        response = `END Last payment of ${PAYMENT_DATA.lastPaymentAmount} received on ${PAYMENT_DATA.lastPaymentDate}.`;
+
+    } else if (text === '3*3') {
+
+      response = `CON Make a Payment
+        You are about to pay ${PAYMENT_DATA.outstandingBalance.split(' ')[0]} to UfarmX.
+        Confirm payment via Mobile Money?
+        1. Confirm
+        2. Cancel
+        0. Back`;
+                
+    } else if (text === '3*3*1') {
+        response = `END Payment of ${PAYMENT_DATA.outstandingBalance.split(' ')[0]} initiated. Please approve the transaction on your mobile phone.`;
+
+    } else if (text === '3*3*2') {
+        response = `END Payment cancelled. Thank you.`;
+
+
+    } else if (text === '4') {
+        response = `CON My Account
+        1. View My Info
+        2. Update My Info
+        3. Change Language
+        0. Back`;
+
+    } else if (text === '4*1') {
+        response = `END My Information:
+        Name: ${FARMER_DATA.name}
+        Location: ${FARMER_DATA.location}
+        Farm Size: ${FARMER_DATA.farmSize}
+        Retailer: ${FARMER_DATA.linkedRetailer}`;
+
+    } else if (text === '4*2') {
+        response = `END Update info is currently unavailable via USSD. Please contact your agent.`;
+        
+    } else if (text === '4*3') {
+        response = `END Language successfully changed to English (default).`;
+
+    } else if (text === '5') {
+        response = `CON Help
+      1. Contact My Agent
+      2. How UfarmX Works
+      3. FAQs
+      0. Back`;
+
+    } else if (text === '5*1') {
+        response = `END Your agent contact: ${FARMER_DATA.agentContact}. An SMS has been sent to you with these details.`;
+
+    } else if (text === '5*2') {
+        response = `END UfarmX connects farmers to approved retailers for inputs using a credit model. Pay back after harvest.`;
+
+    } else if (text === '5*3') {
+        response = `END FAQs:
+      Q: What is the interest rate? A: Contact your agent for personalized terms. 
+      Q: How quickly are requests approved? A: Usually within 48 hours.`;
+
+    } else {
+        response = `END Invalid option selected. Please redial to start a new session.`;
+    }
+    res.set('Content-Type', 'text/plain');
+    res.send(response);
+});
 app.get('/api/config/paypal',(req,res)=>{
   res.send(process.env.PAYPAL_CLIENT_ID)
 }) //this is a CONFIG route to access the paypal client id
