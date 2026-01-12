@@ -291,6 +291,193 @@ app.post("/calculate-score", async (req, res) => {
   }
 });
 
+
+
+//HELPER FUNCTION FOR CALCULATE SCORE RETAILER ROUTE
+const calculateScoreRetailer = (data) => {
+  let score = 0;
+
+  // 1. Business Tenure
+  if (data.businessTenure === "moreThan2Years") score += 10;
+  else if (data.businessTenure === "oneYear") score += 6;
+  else score += 3;
+
+  // 2. Verified 3 Month POS Data
+  score += data.verifiedThreeMonthPosData ? 10 : 3;
+
+  // 3. Average Monthly Net Profit
+  if (data.avgMonthlyNetProfit === "above150k") score += 10;
+  else if (data.avgMonthlyNetProfit === "above75k") score += 6;
+  else score += 3;
+
+  // 4. CRC
+  if (data.crc === "high") score += 15;
+  else if (data.crc === "medium") score += 10;
+  else score += 5;
+
+  // 5. Stock Value
+  if (data.stockValue === "above500k") score += 10;
+  else if (data.stockValue === "above250k") score += 6;
+  else score += 3;
+
+  // 6. Digitally Track Sales
+  score += data.digitallyTrackSales ? 10 : 3;
+
+  // 7. Clean Bank Statements
+  score += data.cleanBankStatements ? 10 : 3;
+
+  // 8. Physical Store Ownership
+  score += data.physicalStoreOwnership ? 10 : 3;
+
+  // 9. Complete and Accurate Application
+  score += data.completeAndAccurateApplication ? 10 : 3;
+
+  /*
+    Maximum possible score:
+    10 + 10 + 10 + 15 + 10 + 10 + 10 + 10 + 10 = 95
+  */
+
+  // Final score scaled to 0–10
+  const finalScore = (score / 95) * 10;
+
+  return Number(finalScore.toFixed(2));
+};
+
+
+
+const mapRetailerToScoreInput = (retailer) => {
+  // helper: normalize yes/no/boolean strings
+  const isYes = (value) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      return value.toLowerCase().includes("yes") ||
+             value.toLowerCase().includes("own");
+    }
+    return false;
+  };
+
+  // helper: normalize numeric strings like "150,000"
+  const parseAmount = (value) => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const numeric = value.replace(/[^0-9]/g, "");
+      return numeric ? Number(numeric) : null;
+    }
+    return null;
+  };
+
+  // 1. Business Tenure
+  let businessTenure = "lessThan1Year";
+  if (typeof retailer.businessTenure === "string") {
+    const tenure = retailer.businessTenure.toLowerCase();
+    if (tenure.includes("more than 2")) businessTenure = "moreThan2Years";
+    else if (tenure.includes("1 year")) businessTenure = "oneYear";
+  }
+
+  // 2. Verified 3 Month POS Data
+  const verifiedThreeMonthPosData = isYes(retailer.verifiedThreeMonthPosData);
+
+  // 3. Average Monthly Net Profit
+  let avgMonthlyNetProfit = "below75k";
+  if (typeof retailer.avgMonthlyNetProfit === "string") {
+    const profitText = retailer.avgMonthlyNetProfit.toLowerCase();
+    const profitValue = parseAmount(profitText);
+
+    if (profitValue !== null) {
+      if (profitValue > 150000) avgMonthlyNetProfit = "above150k";
+      else if (profitValue > 75000) avgMonthlyNetProfit = "above75k";
+    } else {
+      if (profitText.includes("150")) avgMonthlyNetProfit = "above150k";
+      else if (profitText.includes("75")) avgMonthlyNetProfit = "above75k";
+    }
+  }
+
+  // 4. CRC
+  let crc = "low";
+  if (typeof retailer.crc === "string") {
+    const crcText = retailer.crc.toLowerCase();
+    if (crcText.includes("high")) crc = "high";
+    else if (crcText.includes("medium")) crc = "medium";
+  }
+
+  // 5. Stock Value
+  let stockValue = "below250k";
+  if (typeof retailer.stockValue === "string") {
+    const stockText = retailer.stockValue.toLowerCase();
+    const stockAmount = parseAmount(stockText);
+
+    if (stockAmount !== null) {
+      if (stockAmount > 500000) stockValue = "above500k";
+      else if (stockAmount > 250000) stockValue = "above250k";
+    } else {
+      if (stockText.includes("500")) stockValue = "above500k";
+      else if (stockText.includes("250")) stockValue = "above250k";
+    }
+  }
+
+  // 6. Digitally Track Sales
+  const digitallyTrackSales = isYes(retailer.digitallyTrackSales);
+
+  // 7. Clean Bank Statements
+  const cleanBankStatements = isYes(retailer.cleanBankStatements);
+
+  // 8. Physical Store Ownership
+  let physicalStoreOwnership = false;
+  if (typeof retailer.physicalStoreOwnership === "string") {
+    const text = retailer.physicalStoreOwnership.toLowerCase();
+    physicalStoreOwnership =
+      text.includes("own") || text.includes("yes");
+  } else {
+    physicalStoreOwnership = isYes(retailer.physicalStoreOwnership);
+  }
+
+  // 9. Complete and Accurate Application
+  const completeAndAccurateApplication =
+    isYes(retailer.completeAndAccurateApplication);
+
+  return {
+    businessTenure,
+    verifiedThreeMonthPosData,
+    avgMonthlyNetProfit,
+    crc,
+    stockValue,
+    digitallyTrackSales,
+    cleanBankStatements,
+    physicalStoreOwnership,
+    completeAndAccurateApplication,
+  };
+};
+
+
+
+
+
+
+app.post("/calculate-score-retailer", async (req, res) => {
+  try {
+    const retailer = req.body;
+
+    //if (!retailer._id) {
+    //  return res.status(400).json({ success: false, message: "_id is required" });
+    //}
+
+    const mappedData = mapRetailerToScoreInput(retailer);
+    const newScore = calculateScoreRetailer(mappedData);
+
+
+    return res.json({
+      success: true,
+      riskScore: newScore
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
+
+
 // dummy data starts here
 const FARMER_DATA = {
     name: 'Jane Doe',
