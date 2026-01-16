@@ -311,9 +311,9 @@ const calculateScoreRetailer = (data) => {
   else score += 3;
 
   // 4. CRC
-  if (data.crc === "high") score += 15;
-  else if (data.crc === "medium") score += 10;
-  else score += 5;
+  if (data.crc === "high") score += 10; //CRC now has a max of 10, where it was 15 before
+  else if (data.crc === "medium") score += 5;
+  else score += 2;
 
   // 5. Stock Value
   if (data.stockValue === "above500k") score += 10;
@@ -332,9 +332,12 @@ const calculateScoreRetailer = (data) => {
   // 9. Complete and Accurate Application
   score += data.completeAndAccurateApplication ? 10 : 3;
 
+
+// 9. Complete and Accurate Application
+  score += data.willingnessForDailyRepayments ? 5 : 0;
   /*
     Maximum possible score:
-    10 + 10 + 10 + 15 + 10 + 10 + 10 + 10 + 10 = 95
+    10 + 10 + 10 + 15 + 10 + 10 + 10 + 10 + 10  + 5 = 95 out of 100 , because CRC is max 5 out of 15
   */
 
   // Final score scaled to 0–10
@@ -375,10 +378,10 @@ const mapRetailerToScoreInput = (retailer) => {
   }
 
   // 2. Verified 3 Month POS Data
-  const verifiedThreeMonthPosData = isYes(retailer.verifiedThreeMonthPosData);
+  const verifiedThreeMonthPosData = isYes(retailer.verifiedThreeMonthPosData && retailer.verifiedThreeMonthPosData);
 
   // 3. Average Monthly Net Profit
-  let avgMonthlyNetProfit = "below75k";
+  let avgMonthlyNetProfit = "above150k";
   if (typeof retailer.avgMonthlyNetProfit === "string") {
     const profitText = retailer.avgMonthlyNetProfit.toLowerCase();
     const profitValue = parseAmount(profitText);
@@ -393,7 +396,7 @@ const mapRetailerToScoreInput = (retailer) => {
   }
 
   // 4. CRC
-  let crc = "low";
+  let crc = "high";
   if (typeof retailer.crc === "string") {
     const crcText = retailer.crc.toLowerCase();
     if (crcText.includes("high")) crc = "high";
@@ -401,7 +404,7 @@ const mapRetailerToScoreInput = (retailer) => {
   }
 
   // 5. Stock Value
-  let stockValue = "below250k";
+  let stockValue = "above500k";
   if (typeof retailer.stockValue === "string") {
     const stockText = retailer.stockValue.toLowerCase();
     const stockAmount = parseAmount(stockText);
@@ -435,6 +438,9 @@ const mapRetailerToScoreInput = (retailer) => {
   const completeAndAccurateApplication =
     isYes(retailer.completeAndAccurateApplication);
 
+    //10. willingness for daily repayments
+    let willingnessForDailyRepayments = true //true is default for now
+
   return {
     businessTenure,
     verifiedThreeMonthPosData,
@@ -445,6 +451,7 @@ const mapRetailerToScoreInput = (retailer) => {
     cleanBankStatements,
     physicalStoreOwnership,
     completeAndAccurateApplication,
+    willingnessForDailyRepayments
   };
 };
 
