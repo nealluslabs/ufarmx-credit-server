@@ -356,7 +356,7 @@ const mapRetailerToScoreInput = (retailer) => {
       return value.toLowerCase().includes("yes") ||
              value.toLowerCase().includes("own");
     }
-    return false;
+    return true;
   };
 
   // helper: normalize numeric strings like "150,000"
@@ -373,8 +373,8 @@ const mapRetailerToScoreInput = (retailer) => {
   let businessTenure = "lessThan1Year";
   if (typeof retailer.businessTenure === "string") {
     const tenure = retailer.businessTenure.toLowerCase();
-    if (tenure.includes("more than 2")) businessTenure = "moreThan2Years";
-    else if (tenure.includes("1 year")) businessTenure = "oneYear";
+    if (tenure.includes("years")) businessTenure = "moreThan2Years";
+    else if (tenure.toLowerCase().includes("1 year")|| tenure.toLowerCase().includes("less than a year") ) businessTenure = "oneYear";
   }
 
   // 2. Verified 3 Month POS Data
