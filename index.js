@@ -471,10 +471,11 @@ app.post("/calculate-score-retailer", async (req, res) => {
     const mappedData = mapRetailerToScoreInput(retailer);
     const newScore = calculateScoreRetailer(mappedData);
 
+     console.log("RETAILER RISK SCORE FINAL ===>",newScore.toFixed(1))
 
     return res.json({
       success: true,
-      riskScore: newScore
+      riskScore: newScore && newScore.toFixed(1)
     });
 
   } catch (err) {
