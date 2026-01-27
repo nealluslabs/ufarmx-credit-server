@@ -151,7 +151,8 @@ app.get('/api/generatecreditscore',(req,res)=>{
     return {
       hasID: farmer.hasID?"yes":'no',
 
-      age: Number(farmer.age),
+      age: parseInt(farmer.age, 10),
+      
 
       hasEducationOrTraining:farmer.educationLevel? true:false, 
 
