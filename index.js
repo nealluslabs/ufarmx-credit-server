@@ -375,7 +375,8 @@ const mapRetailerToScoreInput = (retailer) => {
   if (typeof retailer.businessTenure === "string") {
     const tenure = retailer.businessTenure.toLowerCase();
     if (tenure.includes("years")) businessTenure = "moreThan2Years";
-    else if (tenure.toLowerCase().includes("1 year")|| tenure.toLowerCase().includes("less than a year") ) businessTenure = "oneYear";
+    else if ( tenure.toLowerCase().includes("lessthan1year") ) businessTenure = "lessThan1Year";
+    else if (tenure.toLowerCase().includes("1 year")) businessTenure = "oneYear";
   }
 
   // 2. Verified 3 Month POS Data
