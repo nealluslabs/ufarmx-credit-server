@@ -352,9 +352,6 @@ const calculateScoreRetailer = (data) => {
 const mapRetailerToScoreInput = (retailer) => {
   // helper: normalize yes/no/boolean strings
 
-  console.log('WHAT IS RETAILER ===>',retailer)
-
-  console.log('BUSINESS TENURE TYPE NKO ===>',typeof(retailer.businessTenure) )
 
   const isYes = (value) => {
     if (typeof value === "boolean") return value;
@@ -478,6 +475,13 @@ app.post("/calculate-score-retailer", async (req, res) => {
     //if (!retailer._id) {
     //  return res.status(400).json({ success: false, message: "_id is required" });
     //}
+
+
+
+  console.log('WHAT IS RETAILER ===>',retailer)
+
+  //console.log('BUSINESS TENURE TYPE NKO ===>',typeof(retailer.businessTenure) )
+
 
     const mappedData = mapRetailerToScoreInput(retailer);
     const newScore = calculateScoreRetailer(mappedData);
