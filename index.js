@@ -342,7 +342,7 @@ const calculateScoreRetailer = (data) => {
   */
 
   // Final score scaled to 0–10
-  const finalScore = (score / 95) * 10;
+  const finalScore = (score / 100) * 10;
 
   return Number(finalScore.toFixed(2));
 };
