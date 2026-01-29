@@ -410,12 +410,13 @@ const mapRetailerToScoreInput = (retailer) => {
     const stockText = retailer.stockValue.toLowerCase();
     const stockAmount = parseAmount(stockText);
 
-    if (stockAmount !== null) {
+   /* if (stockAmount !== null) {
       if (stockAmount > 500000) stockValue = "above500k";
       else if (stockAmount > 250000) stockValue = "above250k";
-    } else {
+    }*/ if(stockAmount !== null) {
       if (stockText.includes("500")) stockValue = "above500k";
-      else if (stockText.includes("250")) stockValue = "above250k";
+      else if (stockText.includes("above250")) stockValue = "above250k";
+      else if (stockText.includes("below250")) stockValue = "below250k";
     }
   }
 
