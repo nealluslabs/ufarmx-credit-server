@@ -372,12 +372,12 @@ const mapRetailerToScoreInput = (retailer) => {
 
   // 1. Business Tenure
   let businessTenure = "lessThan1Year";
-  if (typeof retailer.businessTenure === "string") {
+ /* if (typeof retailer.businessTenure === "string") {*/
     const tenure = retailer.businessTenure.toLowerCase();
     if (tenure.includes("years")) businessTenure = "moreThan2Years";
     else if ( tenure.includes("lessthan1year") ) businessTenure = "lessThan1Year";
     else if (tenure.includes("1 year")) businessTenure = "oneYear";
-  }
+ /* }*/
 
 
   
